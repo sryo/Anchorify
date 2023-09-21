@@ -1,3 +1,4 @@
+<img src="https://raw.githubusercontent.com/sryo/Anchorify/main/icon.png" height="128" alt="Anchorify logo"></img>
 # Anchorify
 A Figma Plugin for converting Markdown-style links to clickable hyperlinks.
 ```
