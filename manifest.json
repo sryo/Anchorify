@@ -1,0 +1,19 @@
+{
+  "name": "Anchorify",
+  "id": "1284214046492867185",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": [
+    "figma"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  },
+  "relaunchButtons": [
+    {"command": "anchorify", "name": "Anchorify links"}
+  ]
+}

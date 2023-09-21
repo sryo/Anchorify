@@ -1,0 +1,8 @@
+{
+  "name": "Anchorify",
+  "version": "1.0.0",
+  "description": "A Figma Plugin for converting Markdown-style links to clickable hyperlinks.",
+  "main": "code.js",
+  "author": "sryo",
+  "license": ""
+}
