@@ -1,66 +1,68 @@
 if (figma.currentPage) {
-    const patterns = [
-        { regex: /\[([^\]]+)]\(([^)]+)\)/g, urlIndex: 2, textIndex: 1 },
-        { regex: /<a href="([^"]+)">([^<]+)<\/a>/g, urlIndex: 1, textIndex: 2 },
-        { regex: /\[url=([^\]]+)]([^[]+)\[\/url]/g, urlIndex: 1, textIndex: 2 },
-        { regex: /(https:\/\/[^\[]+)\[([^\]]+)\]/g, urlIndex: 1, textIndex: 2 }, // AsciiDoc pattern
-        { regex: /\[\[([^\|]+)\|([^\]]+)\]\]/g, urlIndex: 2, textIndex: 1 }    // Creole pattern with display text
+    const MARKDOWN_PATTERN = /\[([^\]]+)]\(([^)]+)\)/g;
+    const HTML_PATTERN = /<a href="([^"]+)">([^<]+)<\/a>/g;
+    const BBCODE_PATTERN = /\[url=([^\]]+)]([^[]+)\[\/url]/g;
+    const CREOLE_PATTERN = /\[\[([^\|]+)\|([^\]]+)\]\]/g;
+
+    const linkPatterns = [
+        { regex: MARKDOWN_PATTERN, urlIndex: 2, textIndex: 1 },
+        { regex: HTML_PATTERN, urlIndex: 1, textIndex: 2 },
+        { regex: BBCODE_PATTERN, urlIndex: 1, textIndex: 2 },
+        { regex: CREOLE_PATTERN, urlIndex: 2, textIndex: 1 }
     ];
 
-    const findAllLinks = (textNode) => {
-        let changes = [];
-        for (let pattern of patterns) {
+    const anchorifyLinksInTextNode = (textNode) => {
+        let extractedLinks = [];
+        for (let pattern of linkPatterns) {
             let match;
             while ((match = pattern.regex.exec(textNode.characters)) !== null) {
                 const start = match.index;
                 const end = start + match[0].length;
                 const linkText = match[pattern.textIndex];
                 const url = match[pattern.urlIndex];
-                changes.push({ start, end, linkText, url });
+                extractedLinks.push({ start, end, linkText, url });
             }
         }
-        return changes;
+        return extractedLinks;
     };
 
-    const textNodes = figma.currentPage.findAll(node => node.type === "TEXT");
-    const loadFontsPromises = textNodes.map(textNode => figma.loadFontAsync(textNode.fontName));
+    const textNodesOnCurrentPage = figma.currentPage.findAll(node => node.type === "TEXT");
+    const fontLoadPromises = textNodesOnCurrentPage.map(textNode => figma.loadFontAsync(textNode.fontName));
 
     let totalLinksAnchorified = 0;
 
-    Promise.all(loadFontsPromises).then(() => {
-        textNodes.forEach((textNode) => {
-            let changes = findAllLinks(textNode);
-            if (!changes.length) return;
+    Promise.all(fontLoadPromises).then(() => {
+        textNodesOnCurrentPage.forEach((textNode) => {
+            let linkModifications = anchorifyLinksInTextNode(textNode);
+            if (!linkModifications.length) return;
 
-            totalLinksAnchorified += changes.length;
+            totalLinksAnchorified += linkModifications.length;
 
-            // Sort changes by starting index to ensure modifications are applied in order
-            changes.sort((a, b) => a.start - b.start);
+            linkModifications.sort((a, b) => a.start - b.start);
 
-            let modifiedText = textNode.characters;
+            let anchorifiedTextContent = textNode.characters;
             let offset = 0;
-            changes.forEach(change => {
-                modifiedText = modifiedText.substring(0, change.start + offset) + change.linkText + modifiedText.substring(change.end + offset);
-                offset += change.linkText.length - (change.end - change.start);
+            linkModifications.forEach(modification => {
+                anchorifiedTextContent = anchorifiedTextContent.substring(0, modification.start + offset) 
+                                         + modification.linkText 
+                                         + anchorifiedTextContent.substring(modification.end + offset);
+                offset += modification.linkText.length - (modification.end - modification.start);
             });
-            textNode.characters = modifiedText;
+            textNode.characters = anchorifiedTextContent;
 
-            // Reapply hyperlinks after modification
             offset = 0;
-            changes.forEach(change => {
-                const newStart = change.start + offset;
-                const newEnd = newStart + change.linkText.length;
+            linkModifications.forEach(modification => {
+                const newStart = modification.start + offset;
+                const newEnd = newStart + modification.linkText.length;
 
-                textNode.setRangeHyperlink(newStart, newEnd, { type: 'URL', value: change.url });
+                textNode.setRangeHyperlink(newStart, newEnd, { type: 'URL', value: modification.url });
                 textNode.setRangeTextDecoration(newStart, newEnd, 'UNDERLINE');
-                offset += change.linkText.length - (change.end - change.start);
+                offset += modification.linkText.length - (modification.end - modification.start);
             });
         });
 
         figma.currentPage.setRelaunchData({ anchorify: 'Click to re-anchorify the links on this page' });
-        
-        // Provide a detailed notification
-        figma.notify(`Anchorified ${totalLinksAnchorified} links in ${textNodes.length} text nodes.`);
+        figma.notify(`Anchorified ${totalLinksAnchorified} links in ${textNodesOnCurrentPage.length} text nodes.`);
         figma.closePlugin();
     });
 }
