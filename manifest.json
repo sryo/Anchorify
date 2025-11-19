@@ -5,15 +5,15 @@
   "main": "code.js",
   "capabilities": [],
   "enableProposedApi": false,
-  "editorType": [
-    "figma"
-  ],
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": [
-      "none"
-    ]
+    "allowedDomains": ["none"]
   },
   "relaunchButtons": [
-    {"command": "anchorify", "name": "Anchorify links"}
+    {
+      "command": "anchorify",
+      "name": "Anchorify links"
+    }
   ]
 }
